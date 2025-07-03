@@ -1,0 +1,53 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>菜單後台</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>後台管理菜單</h1>
+  <table id="menu-table"></table>
+  <button onclick="addRow()">新增餐點</button>
+  <button onclick="saveMenu()">儲存菜單</button>
+
+  <script>
+    const table = document.getElementById('menu-table');
+
+    fetch('https://orz3662171.app.n8n.cloud/webhook/menu-data')
+      .then(res => res.json())
+      .then(data => {
+        data.forEach(addRowWithData);
+      });
+
+    function addRowWithData(item = {}) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><input value="${item.name || ''}" /></td>
+        <td><input type="number" value="${item.price || 0}" /></td>
+        <td><button onclick="removeRow(this)">刪除</button></td>`;
+      table.appendChild(row);
+    }
+
+    function addRow() { addRowWithData(); }
+
+    function removeRow(btn) {
+      btn.parentElement.parentElement.remove();
+    }
+
+    function saveMenu() {
+      const rows = [...table.querySelectorAll('tr')];
+      const data = rows.map(r => {
+        const inputs = r.querySelectorAll('input');
+        return { name: inputs[0].value, price: parseInt(inputs[1].value) || 0 };
+      });
+      fetch('https://orz3662171.app.n8n.cloud/webhook/menu-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      }).then(() => alert('菜單已儲存！'));
+    }
+  </script>
+</body>
+</html>

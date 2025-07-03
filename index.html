@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>線上點餐</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>歡迎點餐</h1>
+  <div id="menu"></div>
+  <button onclick="submitOrder()">送出訂單</button>
+
+  <script>
+    const table = new URLSearchParams(location.search).get('table') || '未知桌號';
+    let menu = [];
+
+    fetch('https://orz3662171.app.n8n.cloud/webhook/menu-data')
+      .then(res => res.json())
+      .then(data => {
+        menu = data;
+        const menuDiv = document.getElementById('menu');
+        menu.forEach((item, i) => {
+          const div = document.createElement('div');
+          div.className = 'menu-item';
+          div.innerHTML = `
+            <span>${item.name} - $${item.price}</span>
+            <button onclick="addItem(${i})">+</button>`;
+          menuDiv.appendChild(div);
+        });
+      });
+
+    let order = {};
+    function addItem(i) {
+      const name = menu[i].name;
+      order[name] = (order[name] || 0) + 1;
+    }
+
+    function submitOrder() {
+      if (Object.keys(order).length === 0) return alert('請先選擇餐點');
+      const items = Object.entries(order).map(([k, v]) => `${k} x${v}`).join(', ');
+      const total = Object.entries(order).reduce((sum, [k, v]) => {
+        const item = menu.find(m => m.name === k);
+        return sum + (item?.price || 0) * v;
+      }, 0);
+      fetch('https://orz3662171.app.n8n.cloud/webhook/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table, items, total })
+      }).then(() => {
+        alert('訂單已送出！');
+        order = {};
+      });
+    }
+  </script>
+</body>
+</html>
